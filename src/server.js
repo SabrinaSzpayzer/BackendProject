@@ -3,13 +3,13 @@ import handlebars from 'express-handlebars';
 import { Server as HttpServer } from 'http';
 import { Server as Socket } from 'socket.io';
 import config from './config.js';
-import routes from './routes.js';
-import controllersdb from './controllersdb.js';
-import User from './models.js';
-import normalizr from 'normalizr';
-const normalize = normalizr.normalize;
-const denormalize = normalizr.denormalize;
-const schema = normalizr.schema;
+import routerProducts from './routes/ProductsRoutes.js';
+import routerCarritos from './routes/CarritosRoutes.js';
+import routerOrders from './routes/OrdersRoutes.js';
+import routerChat from './routes/ChatRoutes.js';
+import routes from './routes/PagesRoutes.js';
+import controllersdb from './connectMongoDb.js';
+import User from './userModelsMongoDb.js';
 import util from 'util';
 import session from 'express-session';
 import MongoStore from 'connect-mongo';
@@ -27,11 +27,7 @@ const numCpu = os.cpus().length;
 import compression from 'compression';
 import logger from './logger.js';
 import sendEmail from '../scripts/email.js';
-import sendWhatsapp from '../scripts/whatsapp.js';
-import sendSms from '../scripts/sms.js';
 import multer from 'multer';
-
-const { Router } = express;
 
 const app = express();
 const httpServer = new HttpServer(app);
@@ -171,11 +167,10 @@ app.set('views', './public/views');
 
 // Routers
 
-const routerProducts = new Router();
-const routerCarritos = new Router();
-
 app.use('/productos', routerProducts);
 app.use('/carritos', routerCarritos);
+app.use('/ordenes', routerOrders);
+app.use('/chat', routerChat);
 
 routerProducts.use(express.json());
 routerProducts.use(express.urlencoded({ extended: true }));
@@ -183,183 +178,74 @@ routerProducts.use(express.urlencoded({ extended: true }));
 routerCarritos.use(express.json());
 routerCarritos.use(express.urlencoded({ extended: true }));
 
+routerOrders.use(express.json());
+routerOrders.use(express.urlencoded({ extended: true }));
+
+routerChat.use(express.json());
+routerChat.use(express.urlencoded({ extended: true }));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
 
-// api Chat
+// Contenedor Chat
 
-import Chat from '../api/Chat.js';
-const historial = new Chat ('./DB/chat.txt');
+import ChatDaoFactory from './daos/ChatDaoFactory.js';
+const historial = ChatDaoFactory.getDao();
 
-// api Contenedor Productos y Carrito
+// Contenedor Productos
 
-import {
-    productosDao as product,
-    carritosDao as carrito
-} from '../api/daos/index.js'
+import ProductosDaoFactory from './daos/ProductosDaoFactory.js';
+const product = ProductosDaoFactory.getDao();
 
-// Router products
+// Contenedor Carritos
 
-routerProducts.get('/', async (req, res) => {
-    const allProducts = await product.getAll();
-    if (allProducts.length > 0) {
-        res.json(allProducts);
-    } else {
-        logger.error('Error en la carga de productos')
-    }
-})
+import CarritosDaoFactory from './daos/CarritosDaoFactory.js';
+const carrito = CarritosDaoFactory.getDao();
 
-routerProducts.get('/:id', async (req, res) => {
-    const { id } = req.params;
-    const productById = await product.getById(id);
-    res.send(productById);
-})
+// Contenedor Ordenes
 
-routerProducts.post('/', async (req, res) => {
-    const newProduct = req.body;
-    const addProduct = await product.saveProduct(newProduct.code, newProduct.title, newProduct.description, newProduct.price, newProduct.thumbnail, newProduct.stock);
-    res.json(addProduct);
-})
-
-routerProducts.put('/:id', async (req, res) => {
-    const { id } = req.params;
-    const updatedProduct = req.body;
-    const putProduct = await product.putProductById(updatedProduct.code, updatedProduct.title, updatedProduct.description, updatedProduct.price, updatedProduct.thumbnail, updatedProduct.stock, id);
-    res.json(putProduct);
-})
-
-routerProducts.delete('/:id', async (req, res) => {
-    const { id } = req.params;
-    const deleteProductById = await product.deleteById(id);
-    const allProducts = await product.getAll();
-    if ( id > allProducts.length ) {
-        res.send("Producto no encontrado");
-    } else {
-        res.send(deleteProductById);
-    }
-})
-
-routerProducts.delete('/', async (req, res) => {
-    const deleteAllProd = await product.deleteAll();
-    res.send(deleteAllProd)
-})
+import OrdenesDaoFactory from './daos/OrdenesDaoFactory.js';
+const orden = OrdenesDaoFactory.getDao();
 
 // Router Carritos
-
-routerCarritos.get('/', async (req, res) => {
-    const allCarritos = await carrito.getAll();
-    if (allCarritos.length > 0) {
-        res.json(allCarritos);
-    } else {
-        res.send("Carritos no encontrados");
-    }
-})
-
-routerCarritos.get('/:id/productos', async (req, res) => {
-    const { id } = req.params;
-    const allCarritos = await carrito.getAll();
-    const carritoById = await carrito.getById(id);
-    const productosIdCarrito = carritoById.productos;
-    if ( id > allCarritos.length ) {
-        res.send("Carrito no encontrado");
-    } else {
-        res.send(productosIdCarrito);
-    }
-})
-
-routerCarritos.post('/', async (req, res) => {
-    const productos = req.body;
-    const addCarrito = await carrito.saveCarrito(productos);
-    res.json(addCarrito);
-})
-
-routerCarritos.post('/:id/productos', async (req, res) => {
-    const { id } = req.params;   
-    const newProductId = req.body;
-    const allProducts = await product.getAll();
-    let newProduct = allProducts.filter(prods => prods._id == newProductId._id)
-    const timestampNow = Date.now()
-    await carrito.updateCarrito(id, {code: newProduct[0].code, title: newProduct[0].title, description: newProduct[0].description, price: newProduct[0].price, thumbnail: newProduct[0].thumbnail, stock: newProduct[0].stock, _id: newProductId._id, timestamp: timestampNow})
-    res.send("Producto agregado al carrito");
-})
 
 routerCarritos.post('/:id/compra', async (req, res) => {
     const { id } = req.params;
     const carritoCompra = await carrito.getById(id);
     let confirmation = `<p>Productos en el carrito: </p>
         <tr>
-        <th>Código</th>
+        <th>ID</th>
         <th>Nombre</th>
+        <th>Descripción</th>
         <th>Precio</th>
         </tr>`;
-
-    let mobileConfirmation = "Nueva orden de compra de " + req.user.username + " - Productos en el carrito: ";
 
     for (const prods of carritoCompra.productos) {          
         confirmation += `<tr>
                         <td>${prods._id}></td>
                         <td>${prods.title}</td>
+                        <td>${prods.description}</td>
                         <td>$${prods.price}</td>
                         </tr>`
-
-        mobileConfirmation += `Producto: ${prods.title} Precio: ${prods.price}`
     }
     
-    sendEmail("Nueva orden de compra de " + req.user.firstName + " " + req.user.lastName + " " + req.user.username + " .", "Productos en el carrito: ", confirmation)
-    
-    sendWhatsapp(mobileConfirmation)
+    const email = req.user.username;
 
-    sendSms("+" + req.user.phone)
-})
-
-routerCarritos.delete('/:id', async (req, res) => {
-    const { id } = req.params;
-    const deleteCarritoById = await carrito.deleteById(id);
-    const allCarritos = await carrito.getAll();
-    if ( id > allCarritos.length ) {
-        res.send("Carrito no encontrado");
+    if (carritoCompra.productos.length > 1) {
+        const estado = "generada";
+        await orden.saveOrder(carritoCompra.productos, estado, email);
+        sendEmail("Nueva orden de compra de " + req.user.firstName + " " + req.user.lastName + " " + req.user.username + " .", "Productos en el carrito: ", confirmation)
+        res.send("Orden generada")
     } else {
-        res.send(deleteCarritoById);
+        logger.error("Error en la orden, debe seleccionar productos, la misma fue rechazada")
     }
 })
-
-routerCarritos.delete('/:id/productos/:id_Prod', async (req, res) => {
-    const { id, id_Prod } = req.params;
-    const deleteProd = await carrito.deleteProdCarrito(id, id_Prod);
-    res.send(deleteProd);
-})
-
-//--------------------------------------------
-// NORMALIZACIÓN DE MENSAJES
-
-// Definimos un esquema de autor
-
-const schemaAuthor =  new schema.Entity('author',{},{idAttribute: 'email'});
-
-// Definimos un esquema de mensaje
-
-const messageSchema = new schema.Entity('post', { author: schemaAuthor }, { idAttribute: 'text' })
-
-// Definimos un esquema de posts
-
-const postSchema = new schema.Entity('posts', { messages: [messageSchema] })
-
-const normalizarMensajes = (mensajesConId) => normalize(mensajesConId, postSchema)
-
-//--------------------------------------------
-
-async function listarMensajesNormalizados() {
-    const messages = await historial.getAll();
-    const normalizedData = normalizarMensajes({ id: 'messages', messages });
-    // console.log(util.inspect(normalizedData, false, 12, true));
-    return normalizedData
-}
 
 // socket
 
 io.on('connection', async socket => {
-    console.log('Nuevo cliente conectado');
+    logger.info('Nuevo cliente conectado');
 
     // Productos
 
@@ -368,7 +254,7 @@ io.on('connection', async socket => {
     socket.emit('productos', allProducts);
     
     socket.on('new-product', async newProduct => {
-        await product.saveProduct(newProduct.code, newProduct.title, newProduct.description, newProduct.price, newProduct.thumbnail, newProduct.stock);
+        await product.saveProduct(newProduct.title, newProduct.description, newProduct.price, newProduct.thumbnail, newProduct.category);
         allProducts.push(newProduct);
         io.sockets.emit('productos', allProducts);
     })
@@ -377,12 +263,12 @@ io.on('connection', async socket => {
 
     const messages = await historial.getAll();
     
-    socket.emit('messages', await listarMensajesNormalizados());
+    socket.emit('messages', messages);
     
     socket.on('new-message', async data => {
         messages.push(data);
-        await historial.save(data);
-        io.sockets.emit('messages', await listarMensajesNormalizados());
+        await historial.saveMsg(data);
+        io.sockets.emit('messages', messages);
     })
 })
 
@@ -411,13 +297,28 @@ function checkAuthentication(req, res, next) {
 
 app.get('/', checkAuthentication, (req, res) => {
     const { user } = req;
-    res.render('home', {nombre: user.firstName, photo: req.user.photo});
+    res.render('home', {nombre: user.firstName, photo: req.user.photo, email: user.username});
 });
+
+// Carrito
 
 app.get('/carrito', checkAuthentication, (req, res) => {
     res.sendFile('carrito.html', { root: __dirname + "../../public"});
 });
 
+// Chat
+
+/* app.get('/chat', async (req, res) => {
+    const mensajes = await historial.getAll();
+    res.send(mensajes);
+});
+
+app.get('/chat/:email', async (req, res) => {
+    const { email } = req.params;
+    const mensajes = await historial.getAll();
+    const mensajeEmail = mensajes.filter(em => em.author.email == email)
+    res.send(mensajeEmail);
+}); */
 
 //LOGOUT
 app.get('/logout', routes.getLogout);
@@ -443,8 +344,8 @@ const options = {
 
 if ((minimist(process.argv.slice(2), options).mode == 'CLUSTER') && cluster.isPrimary) {
     controllersdb(config.mongodb.cnxStr, err => {
-        if (err) return console.log('error en conexión de base de datos', err);
-        console.log('BASE DE DATOS CONECTADA');
+        if (err) return logger.error('error en conexión de base de datos', err);
+        logger.info('BASE DE DATOS CONECTADA');
     });
 
     logger.info(`Número de procesadores ${numCpu}`);
@@ -460,7 +361,7 @@ if ((minimist(process.argv.slice(2), options).mode == 'CLUSTER') && cluster.isPr
     });
 } else {
     controllersdb(config.mongodb.cnxStr, err => {
-        if (err) return console.log('error en conexión de base de datos', err);
+        if (err) return logger.error('error en conexión de base de datos', err);
         logger.info('BASE DE DATOS CONECTADA');
     
         const connectedServer = httpServer.listen(minimist(process.argv.slice(2), options), () => {

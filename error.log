@@ -1,1 +1,6 @@
 {"level":"error","message":"Error al obtener todos los productos"}
+{"kind":"ObjectId","message":"Cast to ObjectId failed for value \"productos\" (type string) at path \"_id\" for model \"carritos\"","name":"CastError","path":"_id","reason":{},"stringValue":"\"productos\"","value":"productos","valueType":"string"}
+{"level":"error","message":"Error en la orden, debe seleccionar productos, la misma fue rechazada"}
+{"level":"error"}
+{"level":"error"}
+{"level":"error"}

@@ -28,12 +28,6 @@
             <h1>Ingrese Producto</h1>
             <br>
             <form id="formAgregarProducto">
-                <!-- Campo código del producto -->
-                <div class="form-group">
-                    <label for="codigo">Código</label>
-                    <input id="codigo" class="form-control" type="number" step="0.01" name="code" required>
-                </div>
-
                 <!-- Campo nombre del producto -->
                 <div class="form-group">
                     <label for="nombre">Nombre</label>
@@ -58,10 +52,10 @@
                     <input id="foto" class="form-control" type="url" name="thumbnail">
                 </div>
                 
-                <!-- Campo stock del producto -->
+                <!-- Campo categoría del producto -->
                 <div class="form-group">
-                    <label for="stock">Stock</label>
-                    <input id="stock" class="form-control" type="number" step="0.01" name="stock" required>
+                    <label for="category">Categoría</label>
+                    <input id="category" class="form-control" type="text" name="category" required>
                 </div>
 
                 <!-- Botón de envío -->
@@ -72,18 +66,14 @@
         </div>
         
         <div class="jumbotron">
-            <h1>Centro de Mensajes (Compresión: <span id="compresion-info"></span>%)</h1>
+            <h1>Centro de Mensajes</h1>
             <br>
             <div id="messages"></div>
             <form onsubmit="return addMessage(this)" id="formPublicarMensaje" class="form-inline" autocomplete="off">
                 <div class="form-group">
-                    <input type="text" id="inputUsername" class="form-control w-50 my-2 mr-2" placeholder="Ingresá tu email">
-                    <input type="text" id="firstname" class="form-control w-50 my-2 mr-2" placeholder="Ingresá tu nombre">
-                    <input type="text" id="lastname" class="form-control w-50 my-2 mr-2" placeholder="Ingresá tu apellido">
-                    <input type="text" id="age" class="form-control w-50 my-2 mr-2" placeholder="Ingresá tu edad">
-                    <input type="text" id="alias" class="form-control w-50 my-2 mr-2" placeholder="Ingresá tu alias">
-                    <input type="text" id="avatar" class="form-control w-50 my-2 mr-2" placeholder="Ingresá tu avatar (url)">
-                    <input id="inputMensaje" type="text" class="form-control w-50 my-2 mr-2" placeholder="Ingresá un mensaje...">
+                    <input type="text" id="inputUsername" class="form-control w-50 my-2 mr-2" placeholder="Ingresá tu email" value={{email}}>
+                    <input type="text" id="tipo" class="form-control w-50 my-2 mr-2" placeholder="Ingresá tipo: usuario/sistema">
+                    <input id="inputMensaje" type="text" class="form-control w-50 my-2 mr-2" placeholder="Ingresá tu mensaje...">
                     <button id="btnEnviar" type="submit" class="btn btn-primary w-15 my-2">Enviar</button>
                 </div>
             </form>

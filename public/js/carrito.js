@@ -114,22 +114,20 @@ function makeHtmlTable(productos) {
         <div class="table-responsive">
             <table class="table table-dark">
                 <tr>
-                    <th>Código</th>
                     <th>Nombre</th>
                     <th>Descripción</th>
                     <th>Precio</th>
                     <th>Foto</th>
-                    <th>Stock</th>
+                    <th>Categoría</th>
                 </tr>`
         for (const prod of productos) {
             html += `
                     <tr>
-                    <td>${prod.code}</td>
                     <td>${prod.title}</td>
                     <td>${prod.description}</td>
                     <td>$${prod.price}</td>
                     <td><img width="50" src=${prod.thumbnail} alt="not found"></td>
-                    <td>${prod.stock}</td>
+                    <td>${prod.category}</td>
                     <td><a type="button" onclick="quitarDelCarrito('${prod._id}')">Borrar</a></td>
                     </tr>`
         }
