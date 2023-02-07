@@ -306,20 +306,6 @@ app.get('/carrito', checkAuthentication, (req, res) => {
     res.sendFile('carrito.html', { root: __dirname + "../../public"});
 });
 
-// Chat
-
-/* app.get('/chat', async (req, res) => {
-    const mensajes = await historial.getAll();
-    res.send(mensajes);
-});
-
-app.get('/chat/:email', async (req, res) => {
-    const { email } = req.params;
-    const mensajes = await historial.getAll();
-    const mensajeEmail = mensajes.filter(em => em.author.email == email)
-    res.send(mensajeEmail);
-}); */
-
 //LOGOUT
 app.get('/logout', routes.getLogout);
 
